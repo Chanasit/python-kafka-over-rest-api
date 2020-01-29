@@ -3,7 +3,7 @@ import random
 from time import sleep
 from flask import Flask, render_template, request, Response
 from flask_cors import CORS
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 
 app = Flask(__name__)
 
@@ -19,11 +19,18 @@ producer = KafkaProducer(
 def event_stream(consumer):
     # forever loop until client or server force close
     while True:
-        msg_pack = consumer.poll(timeout_ms=300, max_records=500)
+        msg_pack = consumer.poll(timeout_ms=300, max_records=50)
         for _, messages in msg_pack.items():
             for msg in messages:
                 # print('data:{0}\n\n'.format(msg.value.decode()))
-                yield 'data:{0}\n\n'.format(msg.value.decode())
+                data = {
+                    "topic": msg.topic,
+                    "offset": msg.offset,
+                    "value": msg.value.decode(),
+                    "partition": msg.partition,
+                    "key": msg.key
+                }
+                yield 'data: {0}\n\n'.format(data)
 
     # if session interupted
     consumer.close()
@@ -42,15 +49,17 @@ def publish():
 
 
 @app.route("/sub")
-def subscribe():
-
+def subscribe():    
     consumer = KafkaConsumer(
-        'TestTopic',
         enable_auto_commit=True,
-        auto_offset_reset='latest',
+        auto_offset_reset='earliest',
         bootstrap_servers="localhost:9094".split(","),
         group_id='gid_' + str(random.randint(10, 999)),
     )
+
+    partition0 = TopicPartition("TestTopic", 0)
+
+    consumer.assign([partition0])
 
     return Response(
         response=event_stream(consumer),
