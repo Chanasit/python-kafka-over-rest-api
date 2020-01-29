@@ -1,0 +1,61 @@
+version: '3.7'
+services:
+  zk:
+    container_name: zk
+    image: wurstmeister/zookeeper
+    container_name: bn-kafka-zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    container_name: kafka
+    image: wurstmeister/kafka:latest
+    container_name: bn-kafka
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+    environment:
+      #HOSTNAME_COMMAND: "curl 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'Metadata-Flavor: Google'"
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_HEAP_OPTS : "-Xmx256M -Xms128M"
+      KAFKA_JVM_PERFORMANCE_OPTS: " -Xmx256m -Xms128M"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.socks
+
+  kafka-proxy:
+    container_name: kafka-proxy
+    image: confluentinc/cp-kafka-rest:5.2.1
+    container_name: bn-kafka-proxy
+    hostname: kafka-proxy
+    ports:
+      - "8082:8082"
+    environment:
+      KAFKA_REST_LISTENERS: http://0.0.0.0:8082/
+      KAFKA_REST_HOST_NAME: kafka-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+    depends_on:
+      - zk
+      - kafka
+
+  kafka-topics:
+    container_name: kafka-topics
+    image: landoop/kafka-topics-ui:0.9.4
+    container_name: bn-kafka-topics
+    hostname: kafka-topics
+    ports:
+      - "8001:8000"
+    environment:
+      KAFKA_REST_PROXY_URL: "http://kafka-proxy:8082/"
+      PROXY: "true"
+      BASIC_AUTH_USERNAME : 'username'
+      BASIC_AUTH_PASSWORD : 'password'
+    depends_on:
+      - zk
+      - kafka
+      - kafka-proxy
