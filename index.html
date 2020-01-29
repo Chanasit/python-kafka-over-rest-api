@@ -10,11 +10,16 @@
     <title>Document</title>
 </head>
 <script>
-    const source = new EventSource("http://0.0.0.0:8000/sub")
+    const source = new EventSource("http://0.0.0.0:8000/sub?offset=16000")
 
     source.onopen = function(event) {
         console.log(event)
     }
+
+    source.onmessage = function(msg) {
+        console.log(msg)
+    }
+
 </script>
 <body>
     
