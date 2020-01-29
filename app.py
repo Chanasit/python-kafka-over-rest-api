@@ -26,7 +26,7 @@ def event_stream(consumer):
                 data = {
                     "topic": msg.topic,
                     "offset": msg.offset,
-                    "value": msg.value.decode(),
+                    "value": msg.value,
                     "partition": msg.partition,
                     "key": msg.key
                 }
@@ -49,7 +49,12 @@ def publish():
 
 
 @app.route("/sub")
-def subscribe():    
+def subscribe():
+    offset = request.args["offset"]
+
+    if offset is None:
+        return "invalid", 400
+
     consumer = KafkaConsumer(
         enable_auto_commit=True,
         auto_offset_reset='earliest',
@@ -58,8 +63,11 @@ def subscribe():
     )
 
     partition0 = TopicPartition("TestTopic", 0)
+    # partition1 = TopicPartition("TestTopic", 1)
 
     consumer.assign([partition0])
+
+    consumer.seek(partition0, int(offset))
 
     return Response(
         response=event_stream(consumer),
