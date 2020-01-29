@@ -3,14 +3,14 @@ services:
   zk:
     container_name: zk
     image: wurstmeister/zookeeper
-    container_name: bn-kafka-zookeeper
+    container_name: kafka-zookeeper
     ports:
       - "2181:2181"
 
   kafka:
     container_name: kafka
     image: wurstmeister/kafka:latest
-    container_name: bn-kafka
+    container_name: kafka
     ports:
       - target: 9094
         published: 9094
@@ -31,7 +31,7 @@ services:
   kafka-proxy:
     container_name: kafka-proxy
     image: confluentinc/cp-kafka-rest:5.2.1
-    container_name: bn-kafka-proxy
+    container_name: kafka-proxy
     hostname: kafka-proxy
     ports:
       - "8082:8082"
@@ -46,7 +46,7 @@ services:
   kafka-topics:
     container_name: kafka-topics
     image: landoop/kafka-topics-ui:0.9.4
-    container_name: bn-kafka-topics
+    container_name: kafka-topics
     hostname: kafka-topics
     ports:
       - "8001:8000"
